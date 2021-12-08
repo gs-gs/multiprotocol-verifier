@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 
 import { IController } from 'common/interfaces';
-import { errorMiddleware, loggerMiddleware } from 'common/middlewares';
+import { errorMiddleware, joiErrorMiddleware, loggerMiddleware } from 'common/middlewares';
 import { logger } from 'common/utils/logger';
 
 class App {
@@ -36,6 +36,7 @@ class App {
   }
 
   private initializeErrorHandling() {
+    this.app.use(joiErrorMiddleware);
     this.app.use(errorMiddleware);
   }
 

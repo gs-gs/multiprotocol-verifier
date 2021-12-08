@@ -9,3 +9,6 @@ dist
 
 # VS Code
 .vscode
+
+# Uploads
+uploads/**/*
