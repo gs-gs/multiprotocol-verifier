@@ -9,8 +9,3 @@ type QRImageData = {
   width: number;
   height: number;
 };
-
-type QRCodeData = {
-  data: VdsDataInput;
-  sig: VdsSignatureInput;
-};

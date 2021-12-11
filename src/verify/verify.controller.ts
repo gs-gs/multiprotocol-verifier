@@ -2,10 +2,11 @@ import { Request, Response, NextFunction, Router } from 'express';
 import { ValidatedRequest, createValidator } from 'express-joi-validation';
 import { readFile } from 'fs';
 
-import { certUploader } from 'common/utils/cert-file';
-import { IController } from 'common/interfaces';
-import { verifyVDS, verifyVDSImageOrPDF } from 'common/utils/vds';
 import { HttpException } from 'common/exceptions';
+import { IController } from 'common/interfaces';
+import { certUploadMiddleware } from 'common/middlewares';
+import { getQRCodeData } from 'common/utils/qr';
+import { verifyQRCode, verifyVDS } from 'common/utils/cert';
 
 import { IVerifyRequestSchema, verifySchema } from './verify.validator';
 
@@ -20,7 +21,7 @@ export class VerifyController implements IController {
   private initializeRoutes() {
     const validator = createValidator({ passError: true });
     this.router.post(this.path, validator.body(verifySchema), this.verify);
-    this.router.post(`${this.path}/file`, certUploader, this.verifyFile);
+    this.router.post(`${this.path}/file`, certUploadMiddleware, this.verifyFile);
   }
 
   private verify = async (request: ValidatedRequest<IVerifyRequestSchema>, response: Response, next: NextFunction) => {
@@ -48,12 +49,15 @@ export class VerifyController implements IController {
             reject(err);
           }
 
+          const base64 = buffer.toString('base64');
+
           try {
-            const base64 = buffer.toString('base64');
-            const verifyResult = await verifyVDSImageOrPDF(base64);
+            const qrCode = await getQRCodeData(base64);
+            const verifyResult = await verifyQRCode(qrCode);
             resolve(verifyResult);
+            return;
           } catch (verifyErr) {
-            reject(verifyErr);
+            reject(new Error(`Error verifying QR Code: ${verifyErr}`));
           }
         });
       });

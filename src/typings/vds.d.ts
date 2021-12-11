@@ -1,4 +1,4 @@
-type VdsHeaderZoneInput = {
+type VDSHeaderZoneInput = {
   /**
    * A three letter code identifying the issuing state or organization.
    * The three letter code is according to Doc 9303-3.
@@ -16,7 +16,7 @@ type VdsHeaderZoneInput = {
   v: Scalars['Int'];
 };
 
-type VdsPersonIdentificationInput = {
+type VDSPersonIdentificationInput = {
   ai?: Maybe<Scalars['String']>;
   /** Date of birth of test subject. ISO8601 YYYY-MM-DD */
   dob?: Maybe<Scalars['String']>;
@@ -28,7 +28,7 @@ type VdsPersonIdentificationInput = {
   sex?: Maybe<Scalars['String']>;
 };
 
-type VdsVaccinationEventDetailsInput = {
+type VDSVaccinationEventDetailsInput = {
   /** name or identifier of the vaccination facility */
   adm: Scalars['String'];
   /**
@@ -46,7 +46,7 @@ type VdsVaccinationEventDetailsInput = {
   seq: Scalars['Int'];
 };
 
-type VdsVaccinationEventInput = {
+type VDSVaccinationEventInput = {
   /** Vaccine or vaccine sub-type (ICD-11 Extension codes (http://id.who.int/icd/entity/164949870) */
   des: Scalars['String'];
   /** Disease or agent that the vaccination provides protection against (ICD-11) */
@@ -54,24 +54,24 @@ type VdsVaccinationEventInput = {
   /** Medicinal product name */
   nam: Scalars['String'];
   /** Vaccination Details */
-  vd: Array<VdsVaccinationEventDetailsInput>;
+  vd: Array<VDSVaccinationEventDetailsInput>;
 };
 
-type VdsMessageZoneInput = {
+type VDSMessageZoneInput = {
   /** Person Identification */
-  pid: VdsPersonIdentificationInput;
+  pid: VDSPersonIdentificationInput;
   /** Unique Vaccination Certificate Identifier */
   uvci: Scalars['String'];
   /** Vaccination Event */
-  ve: Array<VdsVaccinationEventInput>;
+  ve: Array<VDSVaccinationEventInput>;
 };
 
-type VdsDataInput = {
-  hdr?: Maybe<VdsHeaderZoneInput>;
-  msg?: Maybe<VdsMessageZoneInput>;
+type VDSDataInput = {
+  hdr?: Maybe<VDSHeaderZoneInput>;
+  msg?: Maybe<VDSMessageZoneInput>;
 };
 
-type VdsSignatureInput = {
+type VDSSignatureInput = {
   /**
    * The signature algorithm used to produce the signature. Signatures MUST be ECDSA. A key length of 256 bit in
    * combination with SHA-256(at the time this document is created) is RECOMMENDED.
@@ -81,4 +81,9 @@ type VdsSignatureInput = {
   cer: Scalars['String'];
   /** Signature value signed over the Data in base64url [RFC4648] */
   sigvl: Scalars['String'];
+};
+
+type VDSQRCodeData = {
+  data: VDSDataInput;
+  sig: VDSSignatureInput;
 };
