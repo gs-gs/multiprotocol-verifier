@@ -8,7 +8,7 @@ export const verifySchema = Joi.object({
 
 export interface IVerifyRequestSchema extends ValidatedRequestSchema {
   [ContainerTypes.Body]: {
-    data: VdsDataInput;
-    sig: VdsSignatureInput;
+    data: VDSDataInput;
+    sig: VDSSignatureInput;
   };
 }
