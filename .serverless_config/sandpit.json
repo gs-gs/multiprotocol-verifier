@@ -1,0 +1,89 @@
+{
+    "ip": {
+      "allowlist": [
+        "52.63.239.67/32",
+        "13.237.226.46/32",
+        "220.244.246.5/32",
+        "13.54.197.31/32",
+        "3.24.154.140/32",
+        "52.65.133.249/32",
+        "3.106.4.76/32"
+      ]
+    },
+    "logging": {
+      "level": "debug"
+    },
+    "oag": {
+      "base_url": "https://api.oag.com",
+      "api_key": "890e97dc8bef4ca0868077d7414f61e5"
+    },
+    "tech5": {
+      "liveness_url": "https://lds-dev.intnp.cp3.homeaffairs.gov.au/check_liveness",
+      "verification_url": "https://mbap-dev.intnp.cp3.homeaffairs.gov.au/MBAP/api/verifyBiometrics"
+    },
+    "regula": {
+      "base_url": "https://regula-dev.intnp.cp3.homeaffairs.gov.au"
+    },
+    "attachment_store": {
+      "api_internal_path": "/v1",
+      "bucket": {
+        "name": "dpd-integration-application-attachmentstore-lx5hwkvgp9",
+        "region": "ap-southeast-2",
+        "prefix": "",
+        "kms_key": {
+          "arn": "arn:aws:kms:ap-southeast-2:595485301419:key/4bf10ed9-8f27-4678-9b90-7efd7c215bce"
+        }
+      }
+    },
+    "notification_api": {
+      "api_internal_path": "/v1",
+      "bucket": {
+        "name": "dpd-integration-application-notificationstore-lx5hwkvgp9",
+        "region": "ap-southeast-2",
+        "prefix": "",
+        "kms_key": {
+          "arn": "arn:aws:kms:ap-southeast-2:595485301419:key/4bf10ed9-8f27-4678-9b90-7efd7c215bce"
+        }
+      },
+      "queue": {
+        "url": "https://sqs.ap-southeast-2.amazonaws.com/595485301419/dpd-integration-application-notificationqueue",
+        "arn": "arn:aws:sqs:ap-southeast-2:595485301419:dpd-integration-application-notificationqueue",
+        "region": "ap-southeast-2"
+      },
+      "email": {
+        "dpd_from_address": "sandpit@dpd.homeaffairs.gosource.com.au",
+        "permissions_from_address": "sandpit@permissions.homeaffairs.gosource.com.au",
+        "region": "ap-southeast-2"
+      },
+      "sms": {
+        "region": "ap-southeast-2"
+      },
+      "forgerock": {
+        "client_id": "idm-notification",
+        "client_secret": "01563F24C4298D19A515F01BB44321F0",
+        "realm_path": "root",
+        "base_url": "https://auth-dev.intnp.cp3.homeaffairs.gov.au"
+      }
+    },
+    "redis": {
+      "url": "redis://dpd-ca-s8y50avpb7b8.tslzhs.0001.apse2.cache.amazonaws.com:6379"
+    },
+    "vpc": {
+      "subnetIds": ["subnet-0694fa65073a031ea", "subnet-06224e9623e6ed39c"],
+      "securityGroupIds": ["sg-0039b070c2cd7674d"]
+    },
+    "spa": {
+      "traveller_web": {
+        "bucket": "dpd-integration-ops-lx5hwkvgp9",
+        "prefix": "settings/dpd/integration/web/web/traveller/spa"
+      }
+    },
+    "IAM": {
+      "CloudWatchRoleArn": "arn:aws:iam::595485301419:role/account-apigateway-roleXaccountXcloudwatch-1ROP78XMFKJW6"
+    },
+    "PublicEndpoint": {
+      "Hostname": "travellerbff-sandpit.permissions.homeaffairs.gosource.com.au",
+      "CertificateArn": "arn:aws:acm:ap-southeast-2:595485301419:certificate/4a41247e-e1ab-434c-8823-f50d7678c0a2",
+      "Enabled": true
+    }
+  }

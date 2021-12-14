@@ -1,8 +1,8 @@
 {
   "name": "multiprotocol-verifier",
   "version": "1.0.0",
-  "description": "Multi Protocol Verifier",
-  "main": "dist/server.js",
+  "description": "Multi Protocol Verifier (requires node14+)",
+  "main": "dist/index.js",
   "scripts": {
     "clean": "rimraf dist/*",
     "lint": "eslint . --ext .ts",
@@ -11,7 +11,7 @@
     "build": "npm-run-all clean lint tsc",
     "dev": "nodemon --watch src -e ts --exec npm run server",
     "server": "ts-node-dev --prefer-ts true --no-notify -r tsconfig-paths/register --watch src --transpile-only ./src/server.ts",
-    "start": "node .",
+    "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -43,7 +43,8 @@
     "pdf2pic": "^2.1.4",
     "pino": "^7.5.1",
     "pino-pretty": "^7.2.0",
-    "pngjs": "^6.0.0"
+    "pngjs": "^6.0.0",
+    "serverless-http": "^2.7.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^15.0.0",
