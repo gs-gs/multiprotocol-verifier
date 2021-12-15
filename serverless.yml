@@ -1,5 +1,5 @@
-app: mvp-dpd
-service: mvp-dpd
+app: mpv-dpd
+service: mpv-dpd
 variablesResolutionMode: '20210326'
 frameworkVersion: '2 || 3'
 
@@ -12,7 +12,7 @@ provider:
   lambdaHashingVersion: '20201221'
 
 functions:
-  mvp-dpd:
-    handler: apps/dist/handler.handler
+  mpv-dpd:
+    handler: dist/handler.handler
     events:
       - httpApi: '*'

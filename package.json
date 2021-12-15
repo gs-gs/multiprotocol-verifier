@@ -2,7 +2,7 @@
   "name": "mpv-dpd",
   "version": "1.0.0",
   "description": "Multi Protocol Verifier (requires node14+)",
-  "main": "dist/index.js",
+  "main": "dist/server.js",
   "scripts": {
     "clean": "rimraf dist/*",
     "lint": "eslint . --ext .ts",
@@ -11,7 +11,7 @@
     "build": "npm-run-all clean lint tsc",
     "dev": "nodemon --watch src -e ts --exec npm run server",
     "server": "ts-node-dev --prefer-ts true --no-notify -r tsconfig-paths/register --watch src --transpile-only ./src/server.ts",
-    "start": "node dist/server.js",
+    "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
