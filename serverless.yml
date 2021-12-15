@@ -11,56 +11,8 @@ provider:
   timeout: 29 # The default is 6 seconds. Note: API Gateway current maximum is 30 seconds
   lambdaHashingVersion: '20201221'
 
-custom:
-  stage: ${opt:stage, self:provider.stage}
-  config: ${file(./.serverless_config/${self:custom.stage}.json)}
-
 functions:
   mvp-dpd:
     handler: apps/dist/handler.handler
-    environment:
-      ENVIRONMENT: ${self:custom.stage}
-      OAG_BASE_URL: ${self:custom.config.oag.base_url}
-      OAG_API_KEY: ${self:custom.config.oag.api_key}
-      LOG_LEVEL: ${self:custom.config.logging.level}
-      BIOMETRIC_TECH5_LIVENESS_URL: ${self:custom.config.tech5.liveness_url}
-      BIOMETRIC_TECH5_VERIFICATION_URL: ${self:custom.config.tech5.verification_url}
-      REGULA_WEB_API_URL: ${self:custom.config.regula.base_url}
-      REDIS_URL: ${self:custom.config.redis.url}
-      ATTACHMENTS_API_BASE_URL: !Sub
-        - 'https://${AttachmentsAPI}.execute-api.${Region}.${AWSUrlSuffix}/${Path}'
-        - AttachmentsAPI: !Ref ApiGatewayRestApi
-          Region: !Ref AWS::Region
-          AWSUrlSuffix: !Ref AWS::URLSuffix
-          Path: ${self:custom.stage}${self:custom.config.attachment_store.api_internal_path}
-
-resources:
-  Resources:
-    DomainName:
-      Type: AWS::ApiGateway::DomainName
-      Properties:
-        DomainName: ${self:custom.config.PublicEndpoint.Hostname, ""}
-        RegionalCertificateArn: ${self:custom.config.PublicEndpoint.CertificateArn, ""}
-        SecurityPolicy: TLS_1_2
-        EndpointConfiguration:
-          Types:
-            - REGIONAL
-      DependsOn:
-        - ApiGatewayRestApi
-
-    BasePathMapping:
-      Type: AWS::ApiGateway::BasePathMapping
-      Properties:
-        DomainName: ${self:custom.config.PublicEndpoint.Hostname, ""}
-        RestApiId: !Ref ApiGatewayRestApi
-        Stage: ${self:custom.stage}
-      DependsOn:
-        - DomainName
-        - ApiGatewayDeployment${sls:instanceId}
-
-  Outputs:
-    AWSDomainName:
-      Value: !GetAtt DomainName.RegionalDomainName
-
-    APIDomainName:
-      Value: ${self:custom.config.PublicEndpoint.Hostname, ""}
+    events:
+      - httpApi: '*'

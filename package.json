@@ -1,5 +1,5 @@
 {
-  "name": "multiprotocol-verifier",
+  "name": "mpv-dpd",
   "version": "1.0.0",
   "description": "Multi Protocol Verifier (requires node14+)",
   "main": "dist/index.js",
