@@ -1,6 +1,7 @@
 import bodyParser from 'body-parser';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import express from 'express';
 
 import { IController } from 'common/interfaces';
@@ -33,6 +34,7 @@ class App {
     this.app.use(cookieParser());
     this.app.use(compression());
     this.app.use(loggerMiddleware);
+    this.app.use(cors());
   }
 
   private initializeErrorHandling() {

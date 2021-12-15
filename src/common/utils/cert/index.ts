@@ -1,3 +1,5 @@
+import { logger } from '../logger';
+
 import { verifyEUDCC } from './eudcc';
 import { verifyVDS } from './vds';
 
@@ -7,8 +9,14 @@ export enum CertType {
   UNKNOWN = 'Unknown',
 }
 
-const parseCertData = (qrCode: string): CertData => {
+const parseCertData = (qrCode: string, logs: string[]): CertData => {
+  logger.debug('CERT: Parsing Cert Data...');
+  logs.push('CERT: Parsing Cert Data...');
+
   if (qrCode.slice(0, 4) === 'HC1:') {
+    logger.debug('CERT: Found HC1 in the QR Code. Recognized as EUDCC...');
+    logs.push('CERT: Found HC1 in the QR Code. Recognized as EUDCC...');
+
     // EUDCC Cert Type
     return {
       type: CertType.EUDCC,
@@ -25,38 +33,54 @@ const parseCertData = (qrCode: string): CertData => {
 
   if (data.data && data.data.hdr && data.data.hdr.is === 'AUS' && data.data.hdr.t === 'icao.vacc') {
     // VDS Cert Type
+
+    logger.debug('CERT: Found icao.vacc in the hdr. Recognized as VDS...');
+    logs.push('CERT: Found icao.vacc in the hdr. Recognized as VDS...');
     return {
       type: CertType.VDS,
       data: qrCode,
     };
   }
 
+  logger.debug('CERT: Unknown cert format...');
+  logs.push('CERT: Unknown cert format...');
   return {
     type: CertType.UNKNOWN,
     data: qrCode,
   };
 };
 
-export const verifyQRCode = async (qrCode: string): Promise<VaccinationCert | null> => {
-  const certData = parseCertData(qrCode);
+export const verifyQRCode = async (
+  qrCode: string,
+): Promise<{ success: boolean; data: VaccinationCert | null; logs: string[] }> => {
+  const logs: string[] = [];
+  let data = null;
 
-  let verifyResult = null;
+  try {
+    const certData = parseCertData(qrCode, logs);
 
-  switch (certData.type) {
-    case CertType.VDS:
-      {
-        const vdsData = JSON.parse(certData.data);
-        verifyResult = await verifyVDS(vdsData.data, vdsData.sig);
-      }
-      break;
-    case CertType.EUDCC:
-      verifyResult = await verifyEUDCC(certData.data);
-      break;
-    default:
-      break;
+    switch (certData.type) {
+      case CertType.VDS:
+        {
+          const vdsData = JSON.parse(certData.data);
+          data = await verifyVDS(vdsData.data, vdsData.sig, logs);
+        }
+        break;
+      case CertType.EUDCC:
+        data = await verifyEUDCC(certData.data, logs);
+        break;
+      default:
+        break;
+    }
+  } catch (err) {
+    data = null;
   }
 
-  return verifyResult;
+  return {
+    success: data !== null,
+    data,
+    logs,
+  };
 };
 
 export * from './eudcc';

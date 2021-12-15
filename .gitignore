@@ -12,3 +12,7 @@ dist
 
 # Uploads
 uploads/**/*
+
+# Env variables
+.env*
+!.env.sample

@@ -26,10 +26,13 @@ export class VerifyController implements IController {
 
   private verify = async (request: ValidatedRequest<IVerifyRequestSchema>, response: Response, next: NextFunction) => {
     try {
-      const vaccinationCert = await verifyVDS(request.body.data, request.body.sig);
+      const logs: string[] = [];
+
+      const vaccinationCert = await verifyVDS(request.body.data, request.body.sig, logs);
       response.json({
         success: true,
         data: vaccinationCert,
+        logs,
       });
     } catch (err: unknown) {
       next(new HttpException(500, err instanceof Error ? err.message : 'Something went wrong'));
@@ -38,7 +41,7 @@ export class VerifyController implements IController {
 
   private verifyFile = async (request: Request, response: Response, next: NextFunction) => {
     try {
-      const vaccinationCert = await new Promise((resolve, reject) => {
+      const result = await new Promise((resolve, reject) => {
         if (!request.file) {
           reject(new Error('Error uploading file.'));
           return;
@@ -51,21 +54,26 @@ export class VerifyController implements IController {
 
           const base64 = buffer.toString('base64');
 
-          try {
-            const qrCode = await getQRCodeData(base64);
-            const verifyResult = await verifyQRCode(qrCode);
-            resolve(verifyResult);
+          const qrCode = await getQRCodeData(base64);
+
+          if (!qrCode.data) {
+            resolve({
+              success: false,
+              data: null,
+              logs: qrCode.logs,
+            });
             return;
-          } catch (verifyErr) {
-            reject(new Error(`Error verifying QR Code: ${verifyErr}`));
           }
+
+          const verifyResult = await verifyQRCode(qrCode.data);
+          resolve({
+            ...verifyResult,
+            logs: [...qrCode.logs, ...verifyResult.logs],
+          });
         });
       });
 
-      response.json({
-        success: true,
-        data: vaccinationCert,
-      });
+      response.json(result);
     } catch (err: unknown) {
       next(new HttpException(500, err instanceof Error ? err.message : 'Something went wrong'));
     }

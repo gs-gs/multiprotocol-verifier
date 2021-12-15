@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { canonicalize } from 'json-canonicalize';
 import jwa from 'jwa';
 
-import { logger } from 'common/utils/logger';
+import { logger } from '../../logger';
 
 import cscaCertificates from './csca-certificates.json';
 
@@ -20,10 +20,14 @@ const toBase64 = (base64url: string) => {
   return base64url.replace(/-/g, '+').replace(/_/g, '/');
 };
 
-const verifyCertificateAuthority = async (cert: string): Promise<boolean> => {
+const verifyCertificateAuthority = async (cert: string, logs: string[]): Promise<boolean> => {
+  logger.debug('VDS: Verifying if the VDS was signed by country signing certificate...');
+  logs.push('VDS: Verifying if the VDS was signed by country signing certificate...');
+
   const parsedCert = Certificate.fromPEM(Buffer.from(cert));
   if (!parsedCert?.authorityKeyIdentifier) {
-    throw Error('Invalid Certificate, Missing authorityKeyIdentifier');
+    logs.push('VDS: Error: Invalid Certificate, Missing authorityKeyIdentifier.');
+    throw Error('VDS: Error: Invalid Certificate, Missing authorityKeyIdentifier.');
   }
   const parseCertJson = parsedCert.toJSON();
 
@@ -42,6 +46,13 @@ const verifyCertificateAuthority = async (cert: string): Promise<boolean> => {
         authorityKeyIdentifier: matchingCertificate?.authorityKeyIdentifier,
         serialNumber: matchingCertificate?.serialNumber,
       });
+      logs.push(
+        `VDS: BSC authorityKeyIdentifier matches that of csca certificate: ${JSON.stringify({
+          country: matchingCertificate?.country,
+          authorityKeyIdentifier: matchingCertificate?.authorityKeyIdentifier,
+          serialNumber: matchingCertificate?.serialNumber,
+        })}`,
+      );
       return true;
     }
   }
@@ -50,6 +61,14 @@ const verifyCertificateAuthority = async (cert: string): Promise<boolean> => {
     country: parseCertJson.issuer.C,
     authorityKeyIdentifier: parsedCert?.authorityKeyIdentifier,
   });
+  logs.push(
+    `VDS: No matching csca certificate(using authorityKeyIdentifier) found for BSC authorityKeyIdentifier: ${JSON.stringify(
+      {
+        country: parseCertJson.issuer.C,
+        authorityKeyIdentifier: parsedCert?.authorityKeyIdentifier,
+      },
+    )}`,
+  );
 
   // Look for authorityKeyIdentifier matches that of csca;
   matchingCertificate = cscaCertificates?.find((cscaCertificate) => {
@@ -67,6 +86,13 @@ const verifyCertificateAuthority = async (cert: string): Promise<boolean> => {
         authorityKeyIdentifier: matchingCertificate?.authorityKeyIdentifier,
         serialNumber: matchingCertificate?.serialNumber,
       });
+      logs.push(
+        `VDS: BSC authorityKeyIdentifier matches subjectKeyIdentifier of csca certificate: ${JSON.stringify({
+          country: matchingCertificate?.country,
+          authorityKeyIdentifier: matchingCertificate?.authorityKeyIdentifier,
+          serialNumber: matchingCertificate?.serialNumber,
+        })}`,
+      );
       return true;
     }
   }
@@ -76,6 +102,13 @@ const verifyCertificateAuthority = async (cert: string): Promise<boolean> => {
     authorityKeyIdentifier: parsedCert?.authorityKeyIdentifier,
     certificate: parseCertJson,
   });
+  logger.push(
+    `VDS: Error: BSC authorityKeyIdentifier doesn't match any of csca certificates: ${JSON.stringify({
+      country: parseCertJson.issuer.C,
+      authorityKeyIdentifier: parsedCert?.authorityKeyIdentifier,
+      certificate: parseCertJson,
+    })}`,
+  );
 
   return false;
 };
@@ -118,17 +151,27 @@ const mapVaccinationResults = async (data: VDSDataInput): Promise<VaccinationCer
   });
 };
 
-export const verifyVDS = async (data?: VDSDataInput, sig?: VDSSignatureInput): Promise<VaccinationCert | null> => {
+export const verifyVDS = async (
+  data: VDSDataInput,
+  sig: VDSSignatureInput,
+  logs: string[],
+): Promise<VaccinationCert | null> => {
+  logger.debug('VDS: Verifying...');
+  logs.push('VDS: Verifying...');
+
   if (data?.hdr?.t !== 'icao.vacc') {
-    throw Error('Not a valid proof of vaccination');
+    logs.push('VDS: Error: Not a valid proof of vaccination.');
+    throw Error('VDS: Error: Not a valid proof of vaccination.');
   }
 
   if (!data?.msg?.pid?.i && !data?.msg?.pid?.dob) {
-    throw Error('Either travel document number or date of birth is required');
+    logs.push('VDS: Error: Either travel document number or date of birth is required.');
+    throw Error('VDS: Error: Either travel document number or date of birth is required.');
   }
 
   if (!sig?.alg || !sig?.cer || !sig?.sigvl) {
-    throw Error('Missing signature attributes');
+    logs.push('VDS: Error: Missing signature attributes.');
+    throw Error('VDS: Error: Missing signature attributes.');
   }
 
   const cert = `-----BEGIN CERTIFICATE-----\n${toBase64(sig.cer)}\n-----END CERTIFICATE-----`;
@@ -145,10 +188,13 @@ export const verifyVDS = async (data?: VDSDataInput, sig?: VDSSignatureInput): P
     const ecdsa = jwa(sig.alg as any);
 
     // STEP 1: Verify the signature in the VDS
+    logger.debug('VDS: Verifying the signature in the VDS...');
+    logs.push('VDS: Verifying the signature in the VDS...');
+
     const isValid = ecdsa.verify(canonicalJSONPayload, signature, pubicKey as string);
 
     // STEP 2: Verify if the VDS was signed by country signing certificate
-    const authorityVerified = await verifyCertificateAuthority(cert);
+    const authorityVerified = await verifyCertificateAuthority(cert, logs);
 
     if (isValid && authorityVerified) {
       return mapVaccinationResults(data);

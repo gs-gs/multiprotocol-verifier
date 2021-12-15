@@ -1,6 +1,7 @@
 import { Certificate } from '@fidm/x509';
 import base45 from 'base45';
 import cbor from 'cbor';
+import { logger } from 'common/utils/logger';
 import cose from 'cose-js';
 import { ec as EC } from 'elliptic';
 import { readFile } from 'fs';
@@ -105,54 +106,79 @@ const mapVaccinationResults = (data: EUDCCData): VaccinationCert => {
   };
 };
 
-export const verifyEUDCC = async (certData: string): Promise<VaccinationCert | null> => {
+export const verifyEUDCC = async (certData: string, logs: string[]): Promise<VaccinationCert | null> => {
   // Base45 Decode
+  logger.debug('EUDCC: Base45 decoding...');
+  logs.push('EUDCC: Base45 decoding...');
+
   let base45Decoded;
   try {
     base45Decoded = Buffer.from(base45.decode(certData));
   } catch {
-    throw new Error('Base45 decode failed.');
+    logs.push('EUDCC: Error: Base45 decode failed.');
+    throw new Error('EUDCC: Error: Base45 decode failed.');
   }
 
   // ZLib Decompression
+  logger.debug('EUDCC: ZLib decompressing...');
+  logs.push('EUDCC: ZLib decompressing...');
+
   let decompressed;
   try {
     decompressed = zlib.inflateSync(base45Decoded);
   } catch {
-    throw new Error('ZLib decompression failed.');
+    logs.push('EUDCC: Error: ZLib decompression failed.');
+    throw new Error('EUDCC: Error: ZLib decompression failed.');
   }
 
   // CBOR Data
+  logger.debug('EUDCC: CBOR decoding...');
+  logs.push('EUDCC: CBOR decoding...');
+
   let cborData;
   try {
     cborData = cbor.decodeAllSync(decompressed);
   } catch {
-    throw new Error('CBOR decode failed.');
+    logs.push('EUDCC: Error: CBOR decoding failed.');
+    throw new Error('EUDCC: Error: CBOR decoding failed.');
   }
 
   // COSE claim
+  logger.debug('EUDCC: Parsing COSE claim...');
+  logs.push('EUDCC: Parsing COSE claim...');
+
   let coseClaim;
   try {
     coseClaim = cbor.decodeAllSync(cborData[0].value[cborData[0].value.length - 2]);
   } catch {
-    throw new Error('COSE Claim decode failed.');
+    logs.push('EUDCC: Error: COSE Claim decode failed.');
+    throw new Error('EUDCC: Error: COSE Claim decode failed.');
   }
   if (!coseClaim) {
-    throw new Error('Claim not found!');
+    logs.push('EUDCC: Error: Claim not found.');
+    throw new Error('EUDCC: Error: Claim not found.');
   }
 
   // Issuer Country
+  logger.debug('EUDCC: Getting issuer country...');
+  logs.push('EUDCC: Getting issuer country...');
+
   let issuerCountry: string;
   try {
     issuerCountry = coseClaim[0].get(1);
   } catch {
-    throw new Error('COSE Claim Issuer Country decode failed.');
+    logs.push('EUDCC: Error: COSE Claim Issuer Country decode failed.');
+    throw new Error('EUDCC: Error: COSE Claim Issuer Country decode failed.');
   }
   if (!issuerCountry) {
-    throw new Error('Issuer country not found!');
+    logs.push('EUDCC: Error: Issuer country not found.');
+    throw new Error('EUDCC: Error: Issuer country not found.');
   }
 
   // Get Trust List
+  logger.debug('EUDCC: Finding public certificate from trust list...');
+  logs.push('EUDCC: Finding public certificate from trust list...');
+
   const trustListBuf = await new Promise<Buffer>((resolve, reject) => {
     readFile(path.join(__dirname, 'trust-list'), (err, data) => {
       if (err) {
@@ -172,6 +198,9 @@ export const verifyEUDCC = async (certData: string): Promise<VaccinationCert | n
   let cert = null;
 
   // Validate with trust list
+  logger.debug('EUDCC: Verifying using public certificate from trust list...');
+  logs.push('EUDCC: Verifying public certificate from trust list...');
+
   for (const trustKey of trustKeys) {
     cert = await verifyEUDCCWithCert(decompressed, trustKey.x5c[0]);
     if (cert) {
@@ -180,7 +209,8 @@ export const verifyEUDCC = async (certData: string): Promise<VaccinationCert | n
   }
 
   if (!cert) {
-    throw new Error('Invalid certificate');
+    logs.push('EUDCC: Error: Invalid certificate.');
+    throw new Error('EUDCC: Error: Invalid certificate.');
   }
 
   return mapVaccinationResults(cert);
