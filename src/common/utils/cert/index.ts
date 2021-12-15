@@ -73,6 +73,7 @@ export const verifyQRCode = async (
         break;
     }
   } catch (err) {
+    logger.error(err);
     data = null;
   }
 

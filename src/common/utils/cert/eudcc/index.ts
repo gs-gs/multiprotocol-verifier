@@ -165,7 +165,7 @@ export const verifyEUDCC = async (certData: string, logs: string[]): Promise<Vac
 
   let issuerCountry: string;
   try {
-    issuerCountry = coseClaim[0].get(1);
+    issuerCountry = coseClaim[0].get(-260).get(1).v[0].co;
   } catch {
     logs.push('EUDCC: Error: COSE Claim Issuer Country decode failed.');
     throw new Error('EUDCC: Error: COSE Claim Issuer Country decode failed.');
@@ -192,7 +192,7 @@ export const verifyEUDCC = async (certData: string, logs: string[]): Promise<Vac
   const trustListPayload = JSON.parse(trustListDecoded.payload);
 
   const trustKeys = [
-    ...trustListPayload.dsc_trust_list[issuerCountry].keys, // Trust List from https://dgcg.covidbevis.se/tp/
+    ...(trustListPayload.dsc_trust_list[issuerCountry]?.keys || []), // Trust List from https://dgcg.covidbevis.se/tp/
     ...(testTrustList?.find((trustList) => trustList.issuerCountry === issuerCountry)?.keys || []), // Test keys from https://github.com/eu-digital-green-certificates/dgc-testdata/
   ];
   let cert = null;
