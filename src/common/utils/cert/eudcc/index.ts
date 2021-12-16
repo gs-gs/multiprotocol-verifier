@@ -165,7 +165,8 @@ export const verifyEUDCC = async (certData: string, logs: string[]): Promise<Vac
 
   let issuerCountry: string;
   try {
-    issuerCountry = coseClaim[0].get(-260).get(1).v[0].co;
+    const coseClaimPayload = coseClaim[0].get(-260).get(1);
+    issuerCountry = coseClaimPayload.v?.[0].co || coseClaimPayload.t?.[0].co;
   } catch {
     logs.push('EUDCC: Error: COSE Claim Issuer Country decode failed.');
     throw new Error('EUDCC: Error: COSE Claim Issuer Country decode failed.');
@@ -173,6 +174,8 @@ export const verifyEUDCC = async (certData: string, logs: string[]): Promise<Vac
   if (!issuerCountry) {
     logs.push('EUDCC: Error: Issuer country not found.');
     throw new Error('EUDCC: Error: Issuer country not found.');
+  } else {
+    logs.push(`EUDCC: Issuer country detected: ${issuerCountry}.`);
   }
 
   // Get Trust List

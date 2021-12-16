@@ -85,8 +85,6 @@ export const getQRCodeData = async (base64Data: string): Promise<{ data: string 
 
     const imageData = await preProcess(base64Data, logs);
 
-    logger.info(`${imageData.width}, ${imageData.height}`);
-
     logger.debug('QR: Parsing QR Data...');
     logs.push('QR: Parsing QR Data...');
 
