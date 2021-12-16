@@ -68,20 +68,6 @@ jobs:
           persist-credentials: true
           path: 'cmdb/dpd'
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@master
-        with:
-          role-to-assume: arn:aws:iam::017206355635:role/GithubActions/gs-gs_accounts-cmdb
-          aws-region: ap-southeast-2
-
-      - name: Get Github App Token
-        id: get_workflow_token
-        uses: peter-murray/workflow-application-token-action@v1
-        with:
-          application_id: ${{ secrets.GH_APP_ID }}
-          application_private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          permissions: "contents:write"
-
       - name: Checkout Accounts
         uses: actions/checkout@v2
         with:
