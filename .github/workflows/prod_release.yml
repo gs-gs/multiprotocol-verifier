@@ -1,0 +1,144 @@
+name: cicd_prod_release_pipeline
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  deploy_production:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: production
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      ROOT_DIR: "${{ github.workspace }}/cmdb"
+      TENANT: apsc
+      PRODUCT: pathfinder
+      SEGMENT: default
+      ENVIRONMENT: production
+      ACCOUNT: prod01
+
+      HAMLET_ENGINE: unicycle
+      HAMLET_AWS_AUTH_SOURCE: ENV
+      HAMLET_AWS_AUTH_ROLE: Automation
+
+    steps:
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          role-to-assume: arn:aws:iam::595485301419:role/GithubActions/gs-gs_multiprotocol-verifier
+          aws-region: ap-southeast-2
+
+      - name: Assume Secret Credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          aws-access-key-id: ${{env.AWS_ACCESS_KEY_ID}}
+          aws-secret-access-key: ${{env.AWS_SECRET_ACCESS_KEY}}
+          aws-session-token: ${{env.AWS_SESSION_TOKEN}}
+          role-to-assume: arn:aws:iam::595485301419:role/Automation
+          aws-region: ap-southeast-2
+          role-skip-session-tagging: "true"
+          role-duration-seconds: "3600"
+
+      - name: set secret values
+        id: client_secrets
+        run: |
+          echo "::set-output name=GTM_ID::$( aws secretsmanager get-secret-value --secret-id pathfinder-${ENVIRONMENT}-management-secretstore-gtm_id --query SecretString | jq -r '.' )"
+          echo "::set-output name=AZURE_TENANT_ID::$( aws secretsmanager get-secret-value --secret-id pathfinder-${ENVIRONMENT}-management-secretstore-azure_auth --query SecretString | jq -r '. | fromjson | .tenant_id' )"
+          echo "::set-output name=AZURE_CLIENT_ID::$( aws secretsmanager get-secret-value --secret-id pathfinder-${ENVIRONMENT}-management-secretstore-azure_auth --query SecretString | jq -r '. | fromjson | .client_id' )"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          role-to-assume: arn:aws:iam::595485301419:role/GithubActions/gs-gs_multiprotocol-verifier
+          aws-region: ap-southeast-2
+
+      - name: Java Setup
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '8'
+
+      - name: Install
+        run: |
+          pip install -q hamlet
+
+      - name: Get Github App Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v1
+        with:
+          application_id: ${{ secrets.GH_APP_ID }}
+          application_private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permissions: "contents:write"
+
+      - name: hamlet_cmdb
+        uses: actions/checkout@v2
+        with:
+          repository: APSCweb/apsc-cmdb
+          token: ${{ steps.get_workflow_token.outputs.token }}
+          persist-credentials: true
+          path: cmdb
+
+      - name: Get API Endpoints
+        id: api_endpoints
+        run: |
+          echo "::set-output name=DATA_API_URL::$(hamlet component describe-occurrence -n elb-app-lb-server-lbport attributes --output-format json | jq -r '.URL' || exit $?)/api/"
+          echo "::set-output name=CV_API_URL::$(hamlet component describe-occurrence -n elb-app-lb-ml-server-lbport attributes --output-format json | jq -r '.URL' || exit $?)"
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: code
+
+      - uses: actions/setup-node@v2
+        name: NodeJs Setup
+        with:
+          node-version: '14'
+
+      - name: install
+        working-directory: code/client
+        run: |
+          npm ci
+
+      - name: build
+        working-directory: code/client
+        env:
+          DATA_API_URL: ${{ steps.api_endpoints.outputs.DATA_API_URL }}
+          CV_API_URL: ${{ steps.api_endpoints.outputs.CV_API_URL }}
+          GTM_ID: ${{ steps.client_secrets.outputs.GTM_ID }}
+          AZURE_TENANT_ID: ${{ steps.client_secrets.outputs.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ steps.client_secrets.outputs.AZURE_CLIENT_ID }}
+          NODE_ENV: production
+          BUILD_ENV: production
+        run: |
+          npm run build
+
+      - name: Deploy
+        env:
+          source_account: np01
+          source_env: staging
+        run: |
+          # Prod needs to be rebuilt for each environment to apply build time config
+          hamlet release upload-image -u client -r "${{ github.sha }}" -f spa --image-path "code/client/dist/"
+          hamlet release update-image-reference -u client -r "${{ github.sha }}" -f spa
+
+          # Upload the rest of the images
+          hamlet release transfer-image -u server -r "${{github.sha}}" -f docker \
+                                        --source-account "${source_account}" --source-environment "${source_env}"
+          hamlet release update-image-reference -u server -r "${{github.sha}}" -f docker
+
+          hamlet deploy run-deployments -u client -u server
+
+      - name: Save CMDB State
+        if: success()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          hamlet cmdb commit-changes --products --commit-message "${{github.run_id}}_${{github.run_attempt}}" --branch "main"

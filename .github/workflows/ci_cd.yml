@@ -1,0 +1,102 @@
+name: ci_cd
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+
+    paths:
+      - 'src/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      BUILD_ENV: production
+
+      HAMLET_ENGINE: unicycle
+      HAMLET_AWS_AUTH_ROLE: Automation
+      HAMLET_AWS_AUTH_SOURCE: ENV
+
+      ROOT_DIR: ${{ github.workspace }}/cmdb
+      TENANT: gosource
+      PRODUCT: permissions
+      SEGMENT: default
+      ENVIRONMENT: integration
+      ACCOUNT: gsha01
+
+    environment: int_cicd
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+
+      - uses: actions/setup-java@v2
+        name: hamlet_java_setup
+        with:
+          distribution: adopt
+          java-version: '8'
+
+      - name: hamlet_install
+        run: |
+          pip install -q hamlet
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          role-to-assume: arn:aws:iam::595485301419:role/GithubActions/gs-gs_multiprotocol-verifier
+          aws-region: ap-southeast-2
+
+      - name: Get Github App Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v1
+        with:
+          application_id: ${{ secrets.GH_APP_ID }}
+          application_private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permissions: "contents:write"
+
+      - name: hamlet_cmdb
+        uses: actions/checkout@v2
+        with:
+          repository: gs-gs/ha-dpd-cmdb
+          token: ${{ steps.get_workflow_token.outputs.token }}
+          persist-credentials: true
+          path: cmdb
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: code
+
+      - name: NodeJs Setup
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: init_build
+        with:
+          path: code
+        run: |
+          npm install
+          npm run build
+
+      - name: sls_build
+        with:
+          path: code
+        run: |
+          npx sls package
+
+      - name: hamlet_deploy
+        run: |
+          hamlet release upload-image -u mpvlambda -r "${{ github.sha }}" -f lambda --image-path .serverless/mpv-dpd.zip 
+          hamlet release update-image-reference -u mpvlambda -r "${{ github.sha }}" -f lambda
+          hamlet deploy run-deployments -u mpvlambda -u apimpv
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          hamlet cmdb commit-changes --products --commit-message "${{github.run_id}}_${{github.run_attempt}}"
