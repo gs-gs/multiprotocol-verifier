@@ -13,6 +13,6 @@ provider:
 
 functions:
   mpv-dpd:
-    handler: dist/handler.handler
+    handler: dist/mpv-dpd.handler
     events:
       - httpApi: '*'

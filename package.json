@@ -1,7 +1,7 @@
 {
-  "name": "mpv-dpd",
+  "name": "multiprotocol-verifier",
   "version": "1.0.0",
-  "description": "Multi Protocol Verifier (requires node14+)",
+  "description": "Multi Protocol Verifier",
   "main": "dist/server.js",
   "scripts": {
     "clean": "rimraf dist/*",
