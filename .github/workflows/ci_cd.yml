@@ -18,7 +18,7 @@ jobs:
       BUILD_ENV: production
 
       HAMLET_ENGINE: unicycle
-      HAMLET_AWS_AUTH_ROLE: Automation
+      HAMLET_AWS_AUTH_ROLE: codeontap-automation
       HAMLET_AWS_AUTH_SOURCE: ENV
 
       ROOT_DIR: ${{ github.workspace }}/cmdb
@@ -87,24 +87,24 @@ jobs:
           node-version: '14'
 
       - name: init_build
-        with:
-          path: code
+        working-directory: code
         run: |
           npm install
           npm run build
-
-      - name: sls_build
-        with:
-          path: code
-        run: |
+          npx -v
           npx sls package
+          ls -ltr
 
       - name: hamlet_deploy
+        working-directory: code
         run: |
           hamlet release upload-image -u mpvlambda -r "${{ github.sha }}" -f lambda --image-path .serverless/mpv-dpd.zip 
           hamlet release update-image-reference -u mpvlambda -r "${{ github.sha }}" -f lambda
           hamlet deploy run-deployments -u mpvlambda -u apimpv
 
+      - name: Save CMDB State
+        if: always()
+        run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           hamlet cmdb commit-changes --products --commit-message "${{github.run_id}}_${{github.run_attempt}}"
