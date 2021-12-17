@@ -85,20 +85,12 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '14'
-          cache: 'npm'
 
       - name: init_build
         working-directory: code
         run: |
           npm install
           npm run build
-
-      - name: sls_build
-        working-directory: code
-        run: |
-          pwd
-          ls -ltr
-          npx -v
           npx sls package
           ls -ltr
 
