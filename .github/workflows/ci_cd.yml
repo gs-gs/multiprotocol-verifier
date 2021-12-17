@@ -95,6 +95,8 @@ jobs:
       - name: sls_build
         working-directory: code
         run: |
+          pwd
+          ls -ltr
           npx sls package
 
       - name: hamlet_deploy
