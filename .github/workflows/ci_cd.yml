@@ -91,14 +91,13 @@ jobs:
         run: |
           npm install
           npm run build
+          npx -v
           npx sls package
           ls -ltr
 
       - name: hamlet_deploy
         working-directory: code
         run: |
-          pwd
-          ls -ltr
           hamlet release upload-image -u mpvlambda -r "${{ github.sha }}" -f lambda --image-path .serverless/mpv-dpd.zip 
           hamlet release update-image-reference -u mpvlambda -r "${{ github.sha }}" -f lambda
           hamlet deploy run-deployments -u mpvlambda -u apimpv
