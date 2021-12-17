@@ -97,7 +97,9 @@ jobs:
         run: |
           pwd
           ls -ltr
+          npx -v
           npx sls package
+          ls -ltr
 
       - name: hamlet_deploy
         working-directory: code
