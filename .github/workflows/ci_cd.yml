@@ -18,7 +18,7 @@ jobs:
       BUILD_ENV: production
 
       HAMLET_ENGINE: unicycle
-      HAMLET_AWS_AUTH_ROLE: Automation
+      HAMLET_AWS_AUTH_ROLE: codeontap-automation
       HAMLET_AWS_AUTH_SOURCE: ENV
 
       ROOT_DIR: ${{ github.workspace }}/cmdb
