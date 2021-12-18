@@ -1,14 +1,10 @@
 name: ci_cd
 
 on:
-  workflow_dispatch:
-
   push:
     branches:
       - main
-
-    paths:
-      - 'src/**'
+      - 'cd/**'
 
 jobs:
   deploy:
@@ -18,8 +14,8 @@ jobs:
       BUILD_ENV: production
 
       HAMLET_ENGINE: unicycle
-      HAMLET_AWS_AUTH_ROLE: Automation
       HAMLET_AWS_AUTH_SOURCE: ENV
+      HAMLET_AWS_AUTH_ROLE: codeontap-automation
 
       ROOT_DIR: ${{ github.workspace }}/cmdb
       TENANT: gosource
@@ -28,7 +24,9 @@ jobs:
       ENVIRONMENT: integration
       ACCOUNT: gsha01
 
-    environment: int_cicd
+    environment:
+      name: integration
+      url: https://api.verifier.showthething.com
 
     permissions:
       id-token: write
@@ -86,25 +84,22 @@ jobs:
         with:
           node-version: '14'
 
-      - name: init_build
-        with:
-          path: code
+      - name: build
+        working-directory: code
         run: |
           npm install
           npm run build
-
-      - name: sls_build
-        with:
-          path: code
-        run: |
           npx sls package
 
       - name: hamlet_deploy
         run: |
-          hamlet release upload-image -u mpvlambda -r "${{ github.sha }}" -f lambda --image-path .serverless/mpv-dpd.zip 
+          hamlet release upload-image -u mpvlambda -r "${{ github.sha }}" -f lambda --image-path code/.serverless/multiprotocol-verfifier.zip
           hamlet release update-image-reference -u mpvlambda -r "${{ github.sha }}" -f lambda
-          hamlet deploy run-deployments -u mpvlambda -u apimpv
+          hamlet deploy run-deployments -u mpvlambda
 
+      - name: Save CMDB State
+        if: always()
+        run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           hamlet cmdb commit-changes --products --commit-message "${{github.run_id}}_${{github.run_attempt}}"
