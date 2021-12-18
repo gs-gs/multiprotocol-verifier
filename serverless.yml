@@ -1,7 +1,5 @@
-app: mpv-dpd
-service: mpv-dpd
+service: multiprotocol-verfifier
 variablesResolutionMode: '20210326'
-frameworkVersion: '2 || 3'
 
 provider:
   name: aws
@@ -12,7 +10,7 @@ provider:
   lambdaHashingVersion: '20201221'
 
 functions:
-  mpv-dpd:
-    handler: dist/mpv-dpd.handler
+  verifier:
+    handler: dist/lambda.handler
     events:
       - httpApi: '*'
