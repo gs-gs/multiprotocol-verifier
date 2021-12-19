@@ -1,6 +1,13 @@
 service: multiprotocol-verfifier
 variablesResolutionMode: '20210326'
 
+plugins:
+  - serverless-bundle
+
+custom:
+  bundle:
+    tsConfig: 'tsconfig.json'
+
 provider:
   name: aws
   runtime: nodejs14.x
@@ -11,6 +18,6 @@ provider:
 
 functions:
   verifier:
-    handler: dist/lambda.handler
+    handler: src/lambda.handler
     events:
       - httpApi: '*'
