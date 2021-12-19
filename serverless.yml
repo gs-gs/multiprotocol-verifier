@@ -7,6 +7,8 @@ plugins:
 custom:
   bundle:
     tsConfig: 'tsconfig.json'
+    forceInclude:
+      - pino-pretty
 
 provider:
   name: aws
