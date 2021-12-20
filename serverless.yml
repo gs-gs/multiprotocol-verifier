@@ -9,6 +9,12 @@ custom:
     tsConfig: 'tsconfig.json'
     forceInclude:
       - pino-pretty
+    rawFileExtensions:
+      - trust-list
+      - png
+      - pdf
+      - tiff
+      - jpg
 
 provider:
   name: aws
