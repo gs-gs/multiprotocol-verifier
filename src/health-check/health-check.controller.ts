@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 
-import { IController } from 'common/interfaces';
+import { IController } from '../common/interfaces';
 
 export class HealthCheckController implements IController {
   public path = '/health-check';
