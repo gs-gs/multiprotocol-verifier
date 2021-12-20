@@ -1,7 +1,7 @@
 import { Certificate } from '@fidm/x509';
 import base45 from 'base45';
 import cbor from 'cbor';
-import { logger } from 'common/utils/logger';
+import { logger } from '../../logger';
 import cose from 'cose-js';
 import { ec as EC } from 'elliptic';
 import { readFile } from 'fs';

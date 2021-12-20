@@ -4,9 +4,9 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 
-import { IController } from 'common/interfaces';
-import { errorMiddleware, joiErrorMiddleware, loggerMiddleware } from 'common/middlewares';
-import { logger } from 'common/utils/logger';
+import { IController } from './common/interfaces';
+import { errorMiddleware, joiErrorMiddleware, loggerMiddleware } from './common/middlewares';
+import { logger } from './common/utils/logger';
 
 class App {
   public app: express.Application;
