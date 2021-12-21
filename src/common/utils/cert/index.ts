@@ -31,7 +31,7 @@ const parseCertData = (qrCode: string, logs: string[]): CertData => {
     data = null;
   }
 
-  if (data.data && data.data.hdr && data.data.hdr.is === 'AUS' && data.data.hdr.t === 'icao.vacc') {
+  if (data && data.data && data.data.hdr && data.data.hdr.is === 'AUS' && data.data.hdr.t === 'icao.vacc') {
     // VDS Cert Type
 
     logger.debug('CERT: Found icao.vacc in the hdr. Recognized as VDS...');
@@ -42,8 +42,8 @@ const parseCertData = (qrCode: string, logs: string[]): CertData => {
     };
   }
 
-  logger.debug('CERT: Unknown cert format...');
-  logs.push('CERT: Unknown cert format...');
+  logger.debug('CERT: Error: Unknown cert format...');
+  logs.push('CERT: Error: Unknown cert format...');
   return {
     type: CertType.UNKNOWN,
     data: qrCode,

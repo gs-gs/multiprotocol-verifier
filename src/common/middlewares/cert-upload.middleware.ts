@@ -1,14 +1,14 @@
-import aws from 'aws-sdk';
+import AWS from 'aws-sdk';
 import { Request } from 'express';
 import multer, { FileFilterCallback } from 'multer';
 import multerS3 from 'multer-s3';
 import path from 'path';
 
-const s3 = new aws.S3();
+const s3 = new AWS.S3();
 
 const storage = multerS3({
   s3: s3,
-  bucket: 'certificates',
+  bucket: process.env.AWS_S3_BUCKET || 'certificates',
   metadata: function (req: Request, file: Express.Multer.File, cb) {
     cb(null, { fieldName: file.fieldname });
   },

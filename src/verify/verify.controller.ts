@@ -65,7 +65,24 @@ export class VerifyController implements IController {
             return;
           }
 
-          const verifyResult = await verifyQRCode(qrCode.data);
+          let verifyResult;
+
+          if (typeof qrCode.data === 'string') {
+            verifyResult = await verifyQRCode(qrCode.data);
+          } else {
+            // Verify all QR codes
+            const verifyResults: Array<{ success: boolean; data: VaccinationCert | null; logs: string[] }> =
+              await Promise.all(qrCode.data.map(async (data) => await verifyQRCode(data)));
+
+            verifyResult = verifyResults[0];
+
+            for (const verifyItem of verifyResults) {
+              if (verifyItem.success) {
+                verifyResult = verifyItem;
+              }
+            }
+          }
+
           resolve({
             ...verifyResult,
             logs: [...qrCode.logs, ...verifyResult.logs],
