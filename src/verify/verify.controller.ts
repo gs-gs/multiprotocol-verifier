@@ -2,11 +2,11 @@ import { Request, Response, NextFunction, Router } from 'express';
 import { ValidatedRequest, createValidator } from 'express-joi-validation';
 import { readFile } from 'fs';
 
-import { HttpException } from 'common/exceptions';
-import { IController } from 'common/interfaces';
-import { certUploadMiddleware } from 'common/middlewares';
-import { getQRCodeData } from 'common/utils/qr';
-import { verifyQRCode, verifyVDS } from 'common/utils/cert';
+import { HttpException } from '../common/exceptions';
+import { IController } from '../common/interfaces';
+import { certUploadMiddleware } from '../common/middlewares';
+import { getQRCodeData } from '../common/utils/qr';
+import { verifyQRCode, verifyVDS } from '../common/utils/cert';
 
 import { IVerifyRequestSchema, verifySchema } from './verify.validator';
 

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { HttpException } from 'common/exceptions';
+import { HttpException } from '../exceptions';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const joiErrorMiddleware = (err: any, request: Request, response: Response, next: NextFunction) => {
