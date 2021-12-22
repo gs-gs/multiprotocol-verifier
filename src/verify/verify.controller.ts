@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction, Router } from 'express';
 import { ValidatedRequest, createValidator } from 'express-joi-validation';
-import { readFile } from 'fs';
 
 import { HttpException } from '../common/exceptions';
 import { IController } from '../common/interfaces';
@@ -41,56 +40,45 @@ export class VerifyController implements IController {
 
   private verifyFile = async (request: Request, response: Response, next: NextFunction) => {
     try {
-      const result = await new Promise((resolve, reject) => {
-        if (!request.file) {
-          reject(new Error('Error uploading file.'));
-          return;
-        }
+      if (!request.file) {
+        throw new Error('Error uploading file.');
+      }
 
-        readFile(request.file.path, async (err, buffer) => {
-          if (err) {
-            reject(err);
-          }
+      const base64 = request.file.buffer.toString('base64');
 
-          const base64 = buffer.toString('base64');
+      const qrCode = await getQRCodeData(base64);
 
-          const qrCode = await getQRCodeData(base64);
-
-          if (!qrCode.data) {
-            resolve({
-              success: false,
-              data: null,
-              logs: qrCode.logs,
-            });
-            return;
-          }
-
-          let verifyResult;
-
-          if (typeof qrCode.data === 'string') {
-            verifyResult = await verifyQRCode(qrCode.data);
-          } else {
-            // Verify all QR codes
-            const verifyResults: Array<{ success: boolean; data: VaccinationCert | null; logs: string[] }> =
-              await Promise.all(qrCode.data.map(async (data) => await verifyQRCode(data)));
-
-            verifyResult = verifyResults[0];
-
-            for (const verifyItem of verifyResults) {
-              if (verifyItem.success) {
-                verifyResult = verifyItem;
-              }
-            }
-          }
-
-          resolve({
-            ...verifyResult,
-            logs: [...qrCode.logs, ...verifyResult.logs],
-          });
+      if (!qrCode.data) {
+        response.json({
+          success: false,
+          data: null,
+          logs: qrCode.logs,
         });
-      });
+        return;
+      }
 
-      response.json(result);
+      let verifyResult;
+
+      if (typeof qrCode.data === 'string') {
+        verifyResult = await verifyQRCode(qrCode.data);
+      } else {
+        // Verify all QR codes
+        const verifyResults: Array<{ success: boolean; data: VaccinationCert | null; logs: string[] }> =
+          await Promise.all(qrCode.data.map(async (data) => await verifyQRCode(data)));
+
+        verifyResult = verifyResults[0];
+
+        for (const verifyItem of verifyResults) {
+          if (verifyItem.success) {
+            verifyResult = verifyItem;
+          }
+        }
+      }
+
+      response.json({
+        ...verifyResult,
+        logs: [...qrCode.logs, ...verifyResult.logs],
+      });
     } catch (err: unknown) {
       next(new HttpException(500, err instanceof Error ? err.message : 'Something went wrong'));
     }
