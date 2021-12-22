@@ -13,7 +13,7 @@ jobs:
     env:
       BUILD_ENV: production
 
-      HAMLET_ENGINE: unicycle
+      HAMLET_ENGINE: tram
       HAMLET_AWS_AUTH_SOURCE: ENV
       HAMLET_AWS_AUTH_ROLE: codeontap-automation
 
