@@ -24,7 +24,7 @@ const getPreProcessor = (base64Input: string, logs: string[]) => {
 
 const PDF2QRImage = async (data: string, logs: string[]): Promise<QRImageData> => {
   const options = {
-    density: 120,
+    density: 150,
     format: 'jpg',
     // A4
     width: 2100,
@@ -77,7 +77,9 @@ const PNG2QRImage = async (data: string, logs: string[]): Promise<QRImageData> =
   };
 };
 
-export const getQRCodeData = async (base64Data: string): Promise<{ data: string | null; logs: string[] }> => {
+export const getQRCodeData = async (
+  base64Data: string,
+): Promise<{ data: string | string[] | null; logs: string[] }> => {
   const logs: string[] = [];
 
   try {
@@ -90,15 +92,40 @@ export const getQRCodeData = async (base64Data: string): Promise<{ data: string 
 
     const code: QRCode | null = jsQR(imageData.data, imageData.width, imageData.height);
 
-    if (!code) {
-      logs.push('QR: Error: Unable to locate QR code.');
-      throw new Error('QR: Error: Unable to locate QR code.');
+    if (code) {
+      return {
+        data: code.data,
+        logs,
+      };
     }
 
-    return {
-      data: code.data,
-      logs,
-    };
+    /**
+     * Hacky solution here.
+     * Try to split the document into two sections horizontally, and try again.
+     * TODO: Call 3rd party lambda function to extract all QR codes from image.
+     */
+
+    const code1: QRCode | null = jsQR(
+      imageData.data.slice(0, imageData.data.length / 2),
+      imageData.width,
+      imageData.height / 2,
+    );
+
+    const code2: QRCode | null = jsQR(
+      imageData.data.slice(imageData.data.length / 2),
+      imageData.width,
+      imageData.height / 2,
+    );
+
+    if (code1 || code2) {
+      return {
+        data: [code1?.data || '', code2?.data || ''],
+        logs,
+      };
+    }
+
+    logs.push('QR: Error: Unable to locate QR code.');
+    throw new Error('QR: Error: Unable to locate QR code.');
   } catch (err) {
     return {
       data: null,
