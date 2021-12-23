@@ -1,4 +1,4 @@
-import { logger } from '../logger';
+import { getLogTimestamp, logger } from '../logger';
 
 import { verifyEUDCC } from './eudcc';
 import { verifyVDS } from './vds';
@@ -11,11 +11,11 @@ export enum CertType {
 
 const parseCertData = (qrCode: string, logs: string[]): CertData => {
   logger.debug('CERT: Parsing Cert Data...');
-  logs.push('CERT: Parsing Cert Data...');
+  logs.push(`${getLogTimestamp()}: CERT: Parsing Cert Data...`);
 
   if (qrCode.slice(0, 4) === 'HC1:') {
     logger.debug('CERT: Found HC1 in the QR Code. Recognized as EUDCC...');
-    logs.push('CERT: Found HC1 in the QR Code. Recognized as EUDCC...');
+    logs.push(`${getLogTimestamp()}: CERT: Found HC1 in the QR Code. Recognized as EUDCC...`);
 
     // EUDCC Cert Type
     return {
@@ -35,7 +35,7 @@ const parseCertData = (qrCode: string, logs: string[]): CertData => {
     // VDS Cert Type
 
     logger.debug('CERT: Found icao.vacc in the hdr. Recognized as VDS...');
-    logs.push('CERT: Found icao.vacc in the hdr. Recognized as VDS...');
+    logs.push(`${getLogTimestamp()}: CERT: Found icao.vacc in the hdr. Recognized as VDS...`);
     return {
       type: CertType.VDS,
       data: qrCode,
@@ -43,7 +43,7 @@ const parseCertData = (qrCode: string, logs: string[]): CertData => {
   }
 
   logger.debug('CERT: Error: Unknown cert format...');
-  logs.push('CERT: Error: Unknown cert format...');
+  logs.push(`${getLogTimestamp()}: CERT: Error: Unknown cert format...`);
   return {
     type: CertType.UNKNOWN,
     data: qrCode,

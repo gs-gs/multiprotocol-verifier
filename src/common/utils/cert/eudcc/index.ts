@@ -1,7 +1,7 @@
 import { Certificate } from '@fidm/x509';
 import base45 from 'base45';
 import cbor from 'cbor';
-import { logger } from '../../logger';
+import { getLogTimestamp, logger } from '../../logger';
 import cose from 'cose-js';
 import { ec as EC } from 'elliptic';
 import { readFile } from 'fs';
@@ -109,78 +109,78 @@ const mapVaccinationResults = (data: EUDCCData): VaccinationCert => {
 export const verifyEUDCC = async (certData: string, logs: string[]): Promise<VaccinationCert | null> => {
   // Base45 Decode
   logger.debug('EUDCC: Base45 decoding...');
-  logs.push('EUDCC: Base45 decoding...');
+  logs.push(`${getLogTimestamp()}: EUDCC: Base45 decoding...`);
 
   let base45Decoded;
   try {
     base45Decoded = Buffer.from(base45.decode(certData));
   } catch {
-    logs.push('EUDCC: Error: Base45 decode failed.');
+    logs.push(`${getLogTimestamp()}: EUDCC: Error: Base45 decode failed.`);
     throw new Error('EUDCC: Error: Base45 decode failed.');
   }
 
   // ZLib Decompression
   logger.debug('EUDCC: ZLib decompressing...');
-  logs.push('EUDCC: ZLib decompressing...');
+  logs.push(`${getLogTimestamp()}: EUDCC: ZLib decompressing...`);
 
   let decompressed;
   try {
     decompressed = zlib.inflateSync(base45Decoded);
   } catch {
-    logs.push('EUDCC: Error: ZLib decompression failed.');
+    logs.push(`${getLogTimestamp()}: EUDCC: Error: ZLib decompression failed.`);
     throw new Error('EUDCC: Error: ZLib decompression failed.');
   }
 
   // CBOR Data
   logger.debug('EUDCC: CBOR decoding...');
-  logs.push('EUDCC: CBOR decoding...');
+  logs.push(`${getLogTimestamp()}: EUDCC: CBOR decoding...`);
 
   let cborData;
   try {
     cborData = cbor.decodeAllSync(decompressed);
   } catch {
-    logs.push('EUDCC: Error: CBOR decoding failed.');
+    logs.push(`${getLogTimestamp()}: EUDCC: Error: CBOR decoding failed.`);
     throw new Error('EUDCC: Error: CBOR decoding failed.');
   }
 
   // COSE claim
   logger.debug('EUDCC: Parsing COSE claim...');
-  logs.push('EUDCC: Parsing COSE claim...');
+  logs.push(`${getLogTimestamp()}: EUDCC: Parsing COSE claim...`);
 
   let coseClaim;
   try {
     coseClaim = cbor.decodeAllSync(cborData[0].value[cborData[0].value.length - 2]);
   } catch {
-    logs.push('EUDCC: Error: COSE Claim decode failed.');
+    logs.push(`${getLogTimestamp()}: EUDCC: Error: COSE Claim decode failed.`);
     throw new Error('EUDCC: Error: COSE Claim decode failed.');
   }
   if (!coseClaim) {
-    logs.push('EUDCC: Error: Claim not found.');
+    logs.push(`${getLogTimestamp()}: EUDCC: Error: Claim not found.`);
     throw new Error('EUDCC: Error: Claim not found.');
   }
 
   // Issuer Country
   logger.debug('EUDCC: Getting issuer country...');
-  logs.push('EUDCC: Getting issuer country...');
+  logs.push(`${getLogTimestamp()}: EUDCC: Getting issuer country...`);
 
   let issuerCountry: string;
   try {
     const coseClaimPayload = coseClaim[0].get(-260).get(1);
     issuerCountry = coseClaimPayload.v?.[0].co || coseClaimPayload.t?.[0].co;
   } catch {
-    logs.push('EUDCC: Error: COSE Claim Issuer Country decode failed.');
+    logs.push(`${getLogTimestamp()}: EUDCC: Error: COSE Claim Issuer Country decode failed.`);
     throw new Error('EUDCC: Error: COSE Claim Issuer Country decode failed.');
   }
   if (!issuerCountry) {
-    logs.push('EUDCC: Error: Issuer country not found.');
+    logs.push(`${getLogTimestamp()}: EUDCC: Error: Issuer country not found.`);
     throw new Error('EUDCC: Error: Issuer country not found.');
   } else {
-    logs.push(`EUDCC: Issuer country detected: ${issuerCountry}.`);
+    logs.push(`${getLogTimestamp()}: EUDCC: Issuer country detected: ${issuerCountry}.`);
   }
 
   // Get Trust List
   logger.debug('EUDCC: Finding public certificate from trust list...');
-  logs.push('EUDCC: Finding public certificate from trust list...');
+  logs.push(`${getLogTimestamp()}: EUDCC: Finding public certificate from trust list...`);
 
   const trustListBuf = await new Promise<Buffer>((resolve, reject) => {
     readFile(path.join(__dirname, 'trust-list'), (err, data) => {
@@ -202,7 +202,7 @@ export const verifyEUDCC = async (certData: string, logs: string[]): Promise<Vac
 
   // Validate with trust list
   logger.debug('EUDCC: Verifying using public certificate from trust list...');
-  logs.push('EUDCC: Verifying public certificate from trust list...');
+  logs.push(`${getLogTimestamp()}: EUDCC: Verifying public certificate from trust list...`);
 
   for (const trustKey of trustKeys) {
     cert = await verifyEUDCCWithCert(decompressed, trustKey.x5c[0]);
@@ -212,7 +212,7 @@ export const verifyEUDCC = async (certData: string, logs: string[]): Promise<Vac
   }
 
   if (!cert) {
-    logs.push('EUDCC: Error: Invalid certificate.');
+    logs.push(`${getLogTimestamp()}: EUDCC: Error: Invalid certificate.`);
     throw new Error('EUDCC: Error: Invalid certificate.');
   }
 

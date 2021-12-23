@@ -15,3 +15,5 @@ export const logger: pino.Logger = pino({
     },
   },
 });
+
+export const getLogTimestamp = (): string => new Date().toISOString();
