@@ -1,15 +1,6 @@
 service: multiprotocol-verfifier
 variablesResolutionMode: '20210326'
 
-plugins:
-  - serverless-bundle
-
-custom:
-  bundle:
-    tsConfig: 'tsconfig.json'
-    forceInclude:
-      - pino-pretty
-
 provider:
   name: aws
   runtime: nodejs14.x
@@ -20,6 +11,6 @@ provider:
 
 functions:
   verifier:
-    handler: src/lambda.handler
+    handler: dist/lambda.handler
     events:
       - httpApi: '*'
