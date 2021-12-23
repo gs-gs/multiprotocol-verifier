@@ -5,7 +5,7 @@ import { HttpException } from '../common/exceptions';
 import { IController } from '../common/interfaces';
 import { certUploadMiddleware } from '../common/middlewares';
 import { getQRCodeData } from '../common/utils/qr';
-import { verifyQRCode, verifyVDS } from '../common/utils/cert';
+import { verifyQRCode } from '../common/utils/cert';
 
 import { IVerifyRequestSchema, verifySchema } from './verify.validator';
 
@@ -25,14 +25,8 @@ export class VerifyController implements IController {
 
   private verify = async (request: ValidatedRequest<IVerifyRequestSchema>, response: Response, next: NextFunction) => {
     try {
-      const logs: string[] = [];
-
-      const vaccinationCert = await verifyVDS(request.body.data, request.body.sig, logs);
-      response.json({
-        success: true,
-        data: vaccinationCert,
-        logs,
-      });
+      const verifyResult = await verifyQRCode(request.body.qrCode);
+      response.json(verifyResult);
     } catch (err: unknown) {
       next(new HttpException(500, err instanceof Error ? err.message : 'Something went wrong'));
     }
